@@ -2,18 +2,18 @@ import sys
 from models.db import Database
 from controllers.userController import UserController
 from controllers.studentController import StudentController
-from PyQt6.QtWidgets import QApplication
-from PyQt6.QtGui import QIcon
 
+from PyQt6.QtWidgets import QApplication
+from PyQt6.QtGui import QIcon, QPixmap
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QLabel, QPushButton, QTabWidget, QFrame, QStatusBar
+    QLabel, QPushButton, QFrame, QStatusBar
 )
-from PyQt6.QtCore import pyqtSignal
+from PyQt6.QtCore import pyqtSignal, Qt
 from PyQt6.QtGui import QFont
 
-from views.Admin.stats import DashboardStats
-from views.Admin.tabs import StudentTabs, StaffTabs
+from views.Admin.student_dashboard import AdminStudentDashboard
+from views.Admin.staff_dashboard import AdminStaffDashboard
 from views.Admin.staff import CreateStaffForm
 from views.Students.student_form import StudentCreationForm
 
@@ -28,37 +28,30 @@ class AdminDashboard(QMainWindow):
         self.student_controller = studentController
         self.db = userController.db
         self.current_user_id = user_id
-
-        self.user_id = user_id
         self.username = username
 
         self.init_ui()
-        self.load_data()
+        self.show_student_dashboard()
         self.load_statistics()
-
 
     def init_ui(self):
         self.setWindowTitle("Admin Dashboard")
-        self.setMinimumSize(1400, 800)
+        self.setMinimumSize(1200, 700)
 
         central = QWidget()
         central.setStyleSheet("background-color: #D9D9D9;")
+        self.setCentralWidget(central)
+
         layout = QVBoxLayout(central)
         layout.setContentsMargins(0, 0, 0, 0)
 
         self._create_header(layout)
+        self.student_dashboard = AdminStudentDashboard(self)
+        self.staff_dashboard = AdminStaffDashboard(self)
+        self.staff_dashboard.hide()
 
-        self.tab_widget = QTabWidget()
-        self.dashboard_tab = DashboardStats(self)
-        self.students_tab = StudentTabs(self)
-        self.staff_tab = StaffTabs(self)
-
-        self.tab_widget.addTab(self.dashboard_tab, "Dashboard")
-        self.tab_widget.addTab(self.students_tab, "Students")
-        self.tab_widget.addTab(self.staff_tab, "Staff")
-
-        layout.addWidget(self.tab_widget)
-        self.setCentralWidget(central)
+        layout.addWidget(self.student_dashboard)
+        layout.addWidget(self.staff_dashboard)
 
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
@@ -69,16 +62,26 @@ class AdminDashboard(QMainWindow):
         header.setStyleSheet("background:#0EA5E9")
 
         layout = QHBoxLayout(header)
+
+        header_icon = QPixmap(r"C:\Users\Machcreator\PycharmProjects\StudentRegisSys\images\LOGO (1).png")
+        header_label = QLabel()
+
+        new_width = 60
+        new_height = 60
+        scaled_icon = header_icon.scaled(new_width, new_height)
+        header_label.setPixmap(scaled_icon)
+
         title = QLabel("SHS Management System")
         title.setFont(QFont("Arial", 20, QFont.Weight.Bold))
         title.setStyleSheet("color:#F6EBEB")
 
-        user = QLabel(f"Admin: {self.username}")
+        user = QLabel(self.username.upper())
         user.setStyleSheet("color:#F6EBEB")
 
         logout = QPushButton("Logout")
         logout.clicked.connect(self.logout)
 
+        layout.addWidget(header_label)
         layout.addWidget(title)
         layout.addStretch()
         layout.addWidget(user)
@@ -86,50 +89,61 @@ class AdminDashboard(QMainWindow):
 
         parent.addWidget(header)
 
-    def load_data(self):
-        # Safely call load_data on tabs if they exist
-        if hasattr(self.students_tab, "load_data"):
-            self.students_tab.load_data()
-        if hasattr(self.staff_tab, "load_data"):
-            self.staff_tab.load_data()
-        # Commented out statistics to avoid undefined labels
+    # ================= DASHBOARD SWITCHING =================
+
+    def show_student_dashboard(self):
+        self.staff_dashboard.hide()
+        self.student_dashboard.show()
+        self.student_dashboard.load_data()
         self.load_statistics()
 
+    def show_staff_dashboard(self):
+        self.student_dashboard.hide()
+        self.staff_dashboard.show()
+        self.staff_dashboard.load_data()
+        self.load_statistics()
+
+    # ================= STATISTICS =================
+
     def load_statistics(self):
-        # Students
-        total_students = self.student_controller.get_student_count()
-        enrolled_students = self.student_controller.get_enrolled_students()
-        pending_students = self.student_controller.get_pending_student_count()
+        self.total_students_label.setText(
+            str(self.student_controller.get_student_count())
+        )
+        self.active_students_label.setText(
+            str(self.student_controller.get_enrolled_students())
+        )
+        self.pending_reviews_label.setText(
+            str(self.student_controller.get_pending_student_count())
+        )
 
-        self.total_students_label.setText(str(total_students))
-        self.active_students_label.setText(str(enrolled_students))
-        self.pending_reviews_label.setText(str(pending_students))
+        self.total_staff_label.setText(
+            str(self.user_controller.get_staff_count())
+        )
+        self.active_staff_label.setText(
+            str(self.user_controller.get_active_staff_count())
+        )
+        self.staff_pending_label.setText(
+            str(self.user_controller.get_inactive_staff_count())
+        )
 
-        # Staff
-        total_staff = self.user_controller.get_staff_count()
-        active_staff = self.user_controller.get_active_staff_count()
-        inactive_staff = self.user_controller.get_inactive_staff_count()
+    # ================= ACTIONS =================
 
-        self.total_staff_label.setText(str(total_staff))
-        self.active_staff_label.setText(str(active_staff))
-        self.staff_pending_label.setText(str(inactive_staff))
-
-    # ---------------- Fixed student creation ----------------
     def create_student_account(self):
-        # Pass the correct parameters: db and current_user_id
         dialog = StudentCreationForm(self.db, self.current_user_id)
-        if dialog.exec():  # This opens the modal form
-            self.load_data()  # Refresh the student tab
+        if dialog.exec():
+            self.student_dashboard.load_data()
+            self.load_statistics()
 
-    # ---------------- Staff creation ----------------
     def create_staff_account(self):
         dialog = CreateStaffForm(self.user_controller)
         if dialog.exec():
-            self.load_data()
+            self.staff_dashboard.load_data()
+            self.load_statistics()
 
     def logout(self):
         self.logout_requested.emit()
         self.close()
+
 
 
 if __name__ == "__main__":
@@ -144,7 +158,7 @@ if __name__ == "__main__":
     student_ctrl = StudentController(db)
 
     app = QApplication(sys.argv)
-    app.setWindowIcon(QIcon(r"C:\Users\Machcreator\Downloads\LOGO (1).png"))
+    app.setWindowIcon(QIcon(r"C:\Users\Machcreator\PycharmProjects\StudentRegisSys\images\LOGO (1).png"))
 
     dashboard = AdminDashboard(
         userController=user_ctrl,

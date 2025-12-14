@@ -7,9 +7,10 @@ from PyQt6.QtCore import Qt
 
 
 class DashboardStats(QWidget):
-    def __init__(self, parent):
+    def __init__(self, parent, mode="students"):
         super().__init__()
-        self.parent = parent  # reference to AdminDashboard
+        self.parent = parent
+        self.mode = mode
         self.init_ui()
 
     def init_ui(self):
@@ -17,12 +18,17 @@ class DashboardStats(QWidget):
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(20)
 
-        # Stats rows
+        # Quick actions (same for both)
         layout.addWidget(self._quick_actions())
-        layout.addLayout(self._stats_row_students())
-        layout.addLayout(self._stats_row_staff())
+
+        # Conditional stat cards
+        if self.mode == "students":
+            layout.addLayout(self._stats_row_students())
+        else:
+            layout.addLayout(self._stats_row_staff())
 
         layout.addStretch()
+
 
     def _stat_card(self, title_text, color_hex):
         # Title label
@@ -37,7 +43,7 @@ class DashboardStats(QWidget):
 
         # Horizontal layout for the card
         card_layout = QHBoxLayout()
-        card_layout.setContentsMargins(20, 20, 20, 20)
+        card_layout.setContentsMargins(20, 20, 20, 0)
         card_layout.setSpacing(10)
         card_layout.addWidget(title_label)
         card_layout.addStretch()
@@ -128,7 +134,7 @@ class DashboardStats(QWidget):
         ), 0, 0)
 
         layout.addWidget(self._action_btn(
-            "View Students Table", "#2ecc71", lambda: self.parent.tab_widget.setCurrentIndex(1)
+            "View Student Table", "#2ecc71", self.parent.show_student_dashboard
         ), 0, 1)
 
         layout.addWidget(self._action_btn(
@@ -136,10 +142,11 @@ class DashboardStats(QWidget):
         ), 0, 2)
 
         layout.addWidget(self._action_btn(
-            "View Staff Table", "#2ecc71", lambda: self.parent.tab_widget.setCurrentIndex(2)
+            "View Staff Table", "#2ecc71", self.parent.show_staff_dashboard
         ), 0, 3)
 
         return group
+
 
     def _action_btn(self, text, color, callback):
         btn = QPushButton(text)

@@ -2,6 +2,7 @@ from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QPushButton,
     QTableWidget, QTableWidgetItem, QHeaderView,
     QMessageBox, QHBoxLayout,
+    QLabel
 )
 from PyQt6.QtGui import QColor
 from PyQt6.QtCore import Qt
@@ -15,12 +16,41 @@ class StudentTabs(QWidget):
 
     def init_ui(self):
         layout = QVBoxLayout(self)
+        layout.setSpacing(10)
+
+        # 🔹 Table label
+        title = QLabel("Student Table")
+        title.setStyleSheet("font-size:16pt; font-weight:bold; color:black; text-align:center;")
+        layout.addWidget(title)
 
         self.table = QTableWidget(0, 8)
         self.table.setHorizontalHeaderLabels([
             "ID", "Name", "Email", "Strand", "Grade",
             "Enrollment", "Status", "Action"
         ])
+
+        # 🔹 Inline table styling (simple)
+        self.table.setStyleSheet("""
+            QTableWidget {
+                border: 2px solid black;
+                color: black;
+                background-color: white;
+                gridline-color: black;
+                font-size: 12pt;
+            }
+
+            QHeaderView::section {
+                background-color: #E5E7EB;
+                color: black;
+                padding: 8px;
+                border: 1px solid black;
+                font-weight: bold;
+            }
+
+            QTableWidget::item:selected {
+                background-color: #D1D5DB;
+            }
+        """)
 
         header = self.table.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
@@ -110,12 +140,41 @@ class StaffTabs(QWidget):
 
     def init_ui(self):
         layout = QVBoxLayout(self)
+        layout.setSpacing(10)
+
+        # 🔹 Table label
+        title = QLabel("Staff Table")
+        title.setStyleSheet("font-size:16pt; font-weight:bold; color:black;")
+        layout.addWidget(title)
 
         self.table = QTableWidget(0, 7)
         self.table.setHorizontalHeaderLabels([
             "ID", "Name", "Email", "Department",
             "Created", "Status", "Action"
         ])
+
+        # 🔹 Inline table styling (simple)
+        self.table.setStyleSheet("""
+            QTableWidget {
+                border: 2px solid black;
+                color: black;
+                background-color: white;
+                gridline-color: black;
+                font-size: 11pt;
+            }
+
+            QHeaderView::section {
+                background-color: #E5E7EB;
+                color: black;
+                padding: 8px;
+                border: 1px solid black;
+                font-weight: bold;
+            }
+
+            QTableWidget::item:selected {
+                background-color: #D1D5DB;
+            }
+        """)
 
         header = self.table.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
@@ -125,6 +184,7 @@ class StaffTabs(QWidget):
         self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
 
         layout.addWidget(self.table)
+
 
     def load_data(self):
         users = self.parent.user_controller.get_all_users()
