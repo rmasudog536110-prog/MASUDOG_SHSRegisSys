@@ -1,4 +1,3 @@
-
 import sys
 from models.db import Database
 from controllers.userController import UserController
@@ -43,6 +42,7 @@ class AdminDashboard(QMainWindow):
         self.setMinimumSize(1400, 800)
 
         central = QWidget()
+        central.setStyleSheet("background-color: #D9D9D9;")
         layout = QVBoxLayout(central)
         layout.setContentsMargins(0, 0, 0, 0)
 
@@ -66,15 +66,15 @@ class AdminDashboard(QMainWindow):
     def _create_header(self, parent):
         header = QFrame()
         header.setFixedHeight(70)
-        header.setStyleSheet("background:#2c3e50")
+        header.setStyleSheet("background:#0EA5E9")
 
         layout = QHBoxLayout(header)
         title = QLabel("SHS Management System")
         title.setFont(QFont("Arial", 20, QFont.Weight.Bold))
-        title.setStyleSheet("color:white")
+        title.setStyleSheet("color:#F6EBEB")
 
         user = QLabel(f"Admin: {self.username}")
-        user.setStyleSheet("color:white")
+        user.setStyleSheet("color:#F6EBEB")
 
         logout = QPushButton("Logout")
         logout.clicked.connect(self.logout)
