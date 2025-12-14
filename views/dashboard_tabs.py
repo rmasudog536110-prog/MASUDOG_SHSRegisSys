@@ -12,15 +12,19 @@ class StudentTabs(QWidget):
     def __init__(self, parent):
         super().__init__()
         self.parent = parent
+        self.sort_order = "DESC"
         self.init_ui()
 
     def init_ui(self):
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(10, 10, 10, 10)
         layout.setSpacing(10)
 
-        # 🔹 Table label
+        # Table label
         title = QLabel("Student Table")
-        title.setStyleSheet("font-size:16pt; font-weight:bold; color:black; text-align:center;")
+        title.setStyleSheet(
+            "font-size:16pt; font-weight:bold; color:black; text-align:center;"
+        )
         layout.addWidget(title)
 
         self.table = QTableWidget(0, 8)
@@ -29,14 +33,14 @@ class StudentTabs(QWidget):
             "Enrollment", "Status", "Action"
         ])
 
-        # 🔹 Inline table styling (simple)
+        # Table style
         self.table.setStyleSheet("""
             QTableWidget {
-                border: 2px solid black;
+                border: 1px solid black;
                 color: black;
                 background-color: white;
                 gridline-color: black;
-                font-size: 12pt;
+                font-size: 10pt;
             }
 
             QHeaderView::section {
@@ -48,7 +52,18 @@ class StudentTabs(QWidget):
             }
 
             QTableWidget::item:selected {
-                background-color: #D1D5DB;
+                background-color: #BEE7FA;
+            }
+
+            QPushButton {
+                background-color: #0EA5E9;
+                color: white;
+                padding: 6px;
+                border-radius: 4px;
+            }
+
+            QPushButton#deleteBtn {
+                background-color: #e74c3c;
             }
         """)
 
@@ -62,7 +77,7 @@ class StudentTabs(QWidget):
         layout.addWidget(self.table)
 
     def load_data(self):
-        students = self.parent.student_controller.get_all_students()
+        students = self.parent.student_controller.get_all_students(self.sort_order)
         self.table.setRowCount(len(students))
 
         for row, s in enumerate(students):
@@ -73,18 +88,15 @@ class StudentTabs(QWidget):
                 item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
                 return item
 
-            self.table.setItem(row, 0, create_centered_item(str(student_id)))
+            self.table.setItem(row, 0, create_centered_item(student_id))
 
             full_name = " ".join(filter(None, [
-                s.get("first_name"),
-                s.get("middle_name"),
-                s.get("last_name")
+                s.get("first_name"), s.get("middle_name"), s.get("last_name")
             ]))
             self.table.setItem(row, 1, create_centered_item(full_name))
-
             self.table.setItem(row, 2, create_centered_item(s.get("email", "N/A")))
             self.table.setItem(row, 3, create_centered_item(s.get("strand", "")))
-            self.table.setItem(row, 4, create_centered_item(str(s.get("grade", ""))))
+            self.table.setItem(row, 4, create_centered_item(s.get("grade", "")))
             self.table.setItem(row, 5, create_centered_item(s.get("enrollment", "")))
 
             status = s.get("status", "")
@@ -103,11 +115,11 @@ class StudentTabs(QWidget):
             edit_btn.clicked.connect(lambda _, sid=student_id: self.edit_student(sid))
 
             delete_btn = QPushButton("Delete")
+            delete_btn.setObjectName("deleteBtn")
             delete_btn.clicked.connect(lambda _, sid=student_id: self.delete_student(sid))
 
             action_layout.addWidget(edit_btn)
             action_layout.addWidget(delete_btn)
-
             self.table.setCellWidget(row, 7, actions)
 
     def edit_student(self, student_id):
@@ -131,18 +143,23 @@ class StudentTabs(QWidget):
             else:
                 QMessageBox.critical(self, "Error", "Failed to delete student.")
 
+    def refresh_table(self):
+        self.sort_order = "ASC" if self.sort_order == "DESC" else "DESC"
+        self.load_data()
+
 
 class StaffTabs(QWidget):
     def __init__(self, parent):
         super().__init__()
         self.parent = parent
+        self.sort_order = "DESC"
         self.init_ui()
 
     def init_ui(self):
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(10, 10, 10, 10)
         layout.setSpacing(10)
 
-        # 🔹 Table label
         title = QLabel("Staff Table")
         title.setStyleSheet("font-size:16pt; font-weight:bold; color:black;")
         layout.addWidget(title)
@@ -153,14 +170,13 @@ class StaffTabs(QWidget):
             "Created", "Status", "Action"
         ])
 
-        # 🔹 Inline table styling (simple)
         self.table.setStyleSheet("""
             QTableWidget {
-                border: 2px solid black;
+                border: 1px solid black;
                 color: black;
                 background-color: white;
                 gridline-color: black;
-                font-size: 11pt;
+                font-size: 10pt;
             }
 
             QHeaderView::section {
@@ -172,7 +188,18 @@ class StaffTabs(QWidget):
             }
 
             QTableWidget::item:selected {
-                background-color: #D1D5DB;
+                background-color: #BEE7FA;
+            }
+
+            QPushButton {
+                background-color: #0EA5E9;
+                color: white;
+                padding: 6px;
+                border-radius: 4px;
+            }
+
+            QPushButton#deleteBtn {
+                background-color: #e74c3c;
             }
         """)
 
@@ -185,9 +212,8 @@ class StaffTabs(QWidget):
 
         layout.addWidget(self.table)
 
-
     def load_data(self):
-        users = self.parent.user_controller.get_all_users()
+        users = self.parent.user_controller.get_all_users(self.sort_order)
         staff = [u for u in users if u.get("role") == "staff"]
 
         self.table.setRowCount(len(staff))
@@ -195,32 +221,19 @@ class StaffTabs(QWidget):
         for row, s in enumerate(staff):
             user_id = s["id"]
 
-            # Helper function to create and center a QTableWidgetItem
             def create_centered_item(text):
                 item = QTableWidgetItem(str(text))
                 item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
                 return item
 
-            # Column 0: ID (Centered)
             self.table.setItem(row, 0, create_centered_item(user_id))
-
-            # Column 1: Full Name (Usually Left-aligned, but centering it here if requested)
             full_name = " ".join(filter(None, [s.get("first_name"), s.get("last_name")])) or s.get("username", "")
             self.table.setItem(row, 1, create_centered_item(full_name))
-
-            # Column 2: Email (Usually Left-aligned)
-            self.table.setItem(row, 2, QTableWidgetItem(s.get("email", "N/A")))
-
-            # Column 3: Department (Centered)
+            self.table.setItem(row, 2, create_centered_item(s.get("email", "N/A")))
             self.table.setItem(row, 3, create_centered_item(s.get("department", "")))
-
-            # Column 4: Created At (Centered)
             self.table.setItem(row, 4, create_centered_item(s.get("created", "")))
-
-            # Column 5: Status (Centered)
             self.table.setItem(row, 5, create_centered_item(s.get("status", "")))
 
-            # Action buttons
             actions = QWidget()
             action_layout = QHBoxLayout(actions)
             action_layout.setContentsMargins(0, 0, 0, 0)
@@ -229,12 +242,16 @@ class StaffTabs(QWidget):
             edit_btn.clicked.connect(lambda _, sid=user_id: self.edit_staff(sid))
 
             delete_btn = QPushButton("Delete")
+            delete_btn.setObjectName("deleteBtn")
             delete_btn.clicked.connect(lambda _, sid=user_id: self.delete_staff(sid))
 
             action_layout.addWidget(edit_btn)
             action_layout.addWidget(delete_btn)
-
             self.table.setCellWidget(row, 6, actions)
+
+    def refresh_table(self):
+        self.sort_order = "ASC" if self.sort_order == "DESC" else "DESC"
+        self.load_data()
 
     def edit_staff(self, user_id):
         if hasattr(self.parent, "edit_staff"):
