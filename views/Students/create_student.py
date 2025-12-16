@@ -21,11 +21,22 @@ class StudentCreationForm(QDialog):
 
     def init_ui(self):
         main_layout = QVBoxLayout()
-        main_layout.setContentsMargins(20, 20, 20, 20)
-        main_layout.setSpacing(15)
-
+        main_layout.setContentsMargins(10, 10, 10, 10)
+        main_layout.setSpacing(12)
+        self.setStyleSheet("""
+            QDialog { background-color: #F3F6F8; }
+            QWidget { background-color: #F3F6F8; }
+            QLabel { color: #111827; }
+            QLineEdit, QComboBox, QTextEdit { background: white; border: 1px solid #0EA5E9; padding: 6px; 
+             border-radius: 4px; color: #111827;}
+            QComboBox QAbstractItemView {color: #111827; selection-background-color: #0EA5E9; selection-color: white;}
+            QPushButton { color: white; background-color: #0EA5E9; border-radius: 6px; padding: 8px; }
+            QPushButton#backBtn { background: transparent; color: #111827; padding: 4px; border: 1px solid #0EA5E9; }
+            QScrollArea { border: none; background-color: transparent; }
+        """)
         dashboard_btn = QPushButton("<- Back to Dashboard")
-        dashboard_btn.clicked.connect(self.close)  # closes dialog
+        dashboard_btn.setObjectName("backBtn")
+        dashboard_btn.clicked.connect(self.close)
         main_layout.addWidget(dashboard_btn, alignment=Qt.AlignmentFlag.AlignLeft)
 
         scroll = QScrollArea()
@@ -70,7 +81,7 @@ class StudentCreationForm(QDialog):
 
         grid_personal = QGridLayout()
         grid_personal.setHorizontalSpacing(10)
-        grid_personal.setVerticalSpacing(15)
+        grid_personal.setVerticalSpacing(10)
         row, col = 0, 0
         half = len(personal_fields) // 2 + len(personal_fields) % 2
         for i, (label_text, widget) in enumerate(personal_fields):
@@ -140,21 +151,20 @@ class StudentCreationForm(QDialog):
         self.update_document_list(self.student_type_combo.currentText())
 
         submit_button = QPushButton("Create Student")
+        submit_button.setStyleSheet("background-color: #0EA5E9; color: white; padding: 12px; border-radius: 6px;")
         submit_button.clicked.connect(self.submit_form)
         main_layout.addWidget(submit_button, alignment=Qt.AlignmentFlag.AlignCenter)
 
         self.setLayout(main_layout)
 
     def update_document_list(self, student_type=None):
-        # Clear previous widgets
         while self.docs_layout.count():
             item = self.docs_layout.takeAt(0)
             if item.widget():
                 item.widget().deleteLater()
 
-        self.documents.clear()  # stores status of each document
+        self.documents.clear()
 
-        # Show all documents (Core + Private + Transferee)
         docs_to_show = (
                 self.documents_master["Core"] +
                 self.documents_master["Private"] +
@@ -168,8 +178,11 @@ class StudentCreationForm(QDialog):
             vbox = QVBoxLayout()
             label = QLabel(doc_name)
             dropdown = QComboBox()
-            dropdown.addItems(["Provided", "Not Provided"])
-            dropdown.currentTextChanged.connect(lambda text, d=doc_name: self.update_document_status(d, text))
+            dropdown.addItems(["Not Provided", "Provided"])  # default is first item
+            dropdown.setCurrentText("Not Provided")  # ensure default selection
+            dropdown.currentTextChanged.connect(
+                lambda text, d=doc_name: self.update_document_status(d, text)
+            )
 
             vbox.addWidget(label)
             vbox.addWidget(dropdown)
@@ -188,7 +201,7 @@ class StudentCreationForm(QDialog):
             "first_name": self.first_name.text(),
             "middle_name": self.middle_name.text(),
             "last_name": self.last_name.text(),
-            "suffix": self.suffix.text(),
+            "suffix": self.suffix.text().strip() or None,
             "sex": self.sex.currentText(),
             "nationality": self.nationality.text(),
             "place_of_birth": self.place_of_birth.text(),
@@ -199,7 +212,7 @@ class StudentCreationForm(QDialog):
             "strand_id": self.strands[self.strand_combo.currentIndex()][0],
             "grade_level_id": self.grade_levels[self.grade_level_combo.currentIndex()][0],
             "student_type": self.student_type_combo.currentText(),
-            "documents_status": self.documents  # include dropdown selections
+            "documents_status": self.documents 
         }
 
         try:

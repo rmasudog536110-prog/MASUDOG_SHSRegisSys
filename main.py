@@ -2,11 +2,12 @@ import sys
 from PyQt6.QtWidgets import QApplication
 from PyQt6.QtGui import QIcon
 
+from controllers.userController import UserController
 # Models
 from models.db import Database
 
 # Controllers
-from controllers.userController import UserController
+from controllers.authController import AuthController
 from controllers.studentController import StudentController
 
 # Views
@@ -22,29 +23,30 @@ if __name__ == "__main__":
     db.create_default_staff()
 
     # Initialize controllers
+    auth_ctrl = AuthController(db)
     user_ctrl = UserController(db)
     student_ctrl = StudentController(db)
+
     # Initialize PyQt application
     app = QApplication(sys.argv)
-    app.setWindowIcon(QIcon(r"C:\Users\Machcreator\Downloads\LOGO (1).png"))
+    app.setWindowIcon(QIcon(r"C:\Users\Machcreator\PycharmProjects\StudentRegisSys\images\LOGO (1).png"))
 
     # Pass controllers to the LoginWindow
-    window = LoginWindow(user_ctrl, student_ctrl)
+    window = LoginWindow(auth_ctrl, student_ctrl)  # <-- updated
     window.resize(500, 600)
     window.show()
 
     def open_dashboard(user):
-
         role = user.get("role")
         user_id = user.get("id")
         username = user.get("username")
 
         if role.lower() == "admin":
             from views.Admin.admin_dashboard import AdminDashboard
-            window.dashboard = AdminDashboard(user_ctrl, student_ctrl, user_id, username)
+            window.dashboard = AdminDashboard(auth_ctrl, user_ctrl, student_ctrl, user_id, username)
         else:
             from views.Staff.staff_dashboard import StaffDashboard
-            window.dashboard = StaffDashboard(user_ctrl, student_ctrl, user_id, username)
+            window.dashboard = StaffDashboard(auth_ctrl, student_ctrl, user_id, username)
 
         window.dashboard.show()
         window.hide()  # close login window

@@ -8,37 +8,27 @@ class StudentController:
     def __init__(self, db: Database):
         self.db = db
 
-    def get_all_students(self):
-        """Fetch all students with related info"""
+    def get_all_students(self, order="DESC"):
+        """Fetch all students with related info and order by ID"""
         try:
             with self.db.connection.cursor(dictionary=True) as cursor:
-                query = """
-                    SELECT 
-                        s.id,
-                        pi.first_name,
-                        pi.middle_name,
-                        pi.last_name,
-                        pi.suffix,
-                        pi.sex,
-                        pi.nationality,
-                        pi.place_of_birth,
-                        pi.email,
-                        pi.phone_number AS phone,
-                        pi.date_of_birth,
-                        pi.address,
-                        st.strand_name AS strand,
-                        gl.level AS grade,
-                        s.student_type AS enrollment,
-                        s.status,
-                        s.registered_at AS created_at,
-                        u.username AS created_by
-                    FROM students s
-                    LEFT JOIN personal_information pi ON pi.id = s.personal_info_id
-                    LEFT JOIN strands st ON st.id = s.strand_id
-                    LEFT JOIN grade_levels gl ON gl.id = s.grade_level_id
-                    LEFT JOIN users u ON u.id = s.created_by
-                    ORDER BY s.id DESC
-                """
+                # sanitize order direction
+                if not isinstance(order, str) or order.upper() not in ("ASC", "DESC"):
+                    order = "DESC"
+
+                query = (
+                    "SELECT "
+                    "s.id, "
+                    "pi.first_name, pi.middle_name, pi.last_name, pi.suffix, pi.sex, pi.nationality, pi.place_of_birth, pi.email, "
+                    "pi.phone_number AS phone, pi.date_of_birth, pi.address, "
+                    "st.strand_name AS strand, gl.level AS grade, s.student_type AS enrollment, s.status, s.registered_at AS created_at, u.username AS created_by "
+                    "FROM students s "
+                    "LEFT JOIN personal_information pi ON pi.id = s.personal_info_id "
+                    "LEFT JOIN strands st ON st.id = s.strand_id "
+                    "LEFT JOIN grade_levels gl ON gl.id = s.grade_level_id "
+                    "LEFT JOIN users u ON u.id = s.created_by "
+                    f"ORDER BY s.id {order}"
+                )
                 cursor.execute(query)
                 return cursor.fetchall()
         except Error as e:
@@ -261,7 +251,7 @@ class StudentController:
             print(f"Error checking student ID: {e}")
             return True
 
-    def get_parents(self, student_id):
+    def get_parents_by_student(self, student_id):
         """Return all parents/guardians of a student"""
         try:
             with self.db.connection.cursor(dictionary=True) as cursor:
@@ -278,30 +268,62 @@ class StudentController:
             print("Error fetching parents:", e)
             return []
 
+    def get_parent(self, parent_id):
+        """Return a single parent by parent ID"""
+        try:
+            with self.db.connection.cursor(dictionary=True) as cursor:
+                cursor.execute("""
+                    SELECT p.id AS parent_id, p.relationship, p.occupation,
+                           pi.first_name, pi.middle_name, pi.last_name,
+                           pi.email, pi.phone_number, pi.address
+                    FROM parents p
+                    JOIN personal_information pi ON pi.id = p.personal_info_id
+                    WHERE p.id = %s
+                """, (parent_id,))
+                return cursor.fetchone()
+        except Error as e:
+            print("Error fetching parent:", e)
+            return None
+
     def add_parent(self, student_id, parent_data):
         try:
             with self.db.connection.cursor() as cursor:
+                # 1. Insert personal information
+                cursor.execute("""
+                    INSERT INTO personal_information
+                        (first_name, middle_name, last_name, email, phone_number, address)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                """, (
+                    parent_data["first_name"],
+                    parent_data.get("middle_name", ""),
+                    parent_data["last_name"],
+                    parent_data.get("email", ""),
+                    parent_data.get("phone_number", ""),
+                    parent_data.get("address", "")
+                ))
+                personal_info_id = cursor.lastrowid
+
+                # 2. Insert into parents table
                 cursor.execute("""
                     INSERT INTO parents (personal_info_id, relationship, occupation)
                     VALUES (%s, %s, %s)
                 """, (
-                    parent_data["personal_info_id"],
+                    personal_info_id,
                     parent_data["relationship"],
                     parent_data.get("occupation", "")
                 ))
                 parent_id = cursor.lastrowid
-
                 cursor.execute("""
                     INSERT INTO student_parents (student_id, parents_id, is_primary)
                     VALUES (%s, %s, %s)
                 """, (
                     student_id,
                     parent_id,
-                    parent_data.get("is_primary", False)
+                    parent_data.get("is_primary", 0)
                 ))
-
                 self.db.connection.commit()
                 return True
+
         except Exception as e:
             self.db.connection.rollback()
             print("Add parent error:", e)
@@ -317,7 +339,7 @@ class StudentController:
                     JOIN parents p ON pi.id = p.personal_info_id
                     SET pi.first_name=%s, pi.middle_name=%s, pi.last_name=%s,
                         pi.email=%s, pi.phone_number=%s, pi.address=%s,
-                        p.relationship=%s
+                        p.relationship=%s, p.occupation=%s
                     WHERE p.id=%s
                 """, (
                     parent_data["first_name"],
@@ -327,6 +349,7 @@ class StudentController:
                     parent_data.get("phone_number", ""),
                     parent_data.get("address", ""),
                     parent_data["relationship"],
+                    parent_data["occupation"],
                     parent_id
                 ))
                 self.db.connection.commit()

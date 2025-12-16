@@ -178,7 +178,6 @@ class StaffTabs(QWidget):
                 gridline-color: black;
                 font-size: 10pt;
             }
-
             QHeaderView::section {
                 background-color: #E5E7EB;
                 color: black;
@@ -186,18 +185,15 @@ class StaffTabs(QWidget):
                 border: 1px solid black;
                 font-weight: bold;
             }
-
             QTableWidget::item:selected {
                 background-color: #BEE7FA;
             }
-
             QPushButton {
                 background-color: #0EA5E9;
                 color: white;
                 padding: 6px;
                 border-radius: 4px;
             }
-
             QPushButton#deleteBtn {
                 background-color: #e74c3c;
             }
@@ -234,16 +230,18 @@ class StaffTabs(QWidget):
             self.table.setItem(row, 4, create_centered_item(s.get("created", "")))
             self.table.setItem(row, 5, create_centered_item(s.get("status", "")))
 
+            # Action buttons
             actions = QWidget()
             action_layout = QHBoxLayout(actions)
             action_layout.setContentsMargins(0, 0, 0, 0)
 
             edit_btn = QPushButton("Edit")
-            edit_btn.clicked.connect(lambda _, sid=user_id: self.edit_staff(sid))
-
             delete_btn = QPushButton("Delete")
             delete_btn.setObjectName("deleteBtn")
-            delete_btn.clicked.connect(lambda _, sid=user_id: self.delete_staff(sid))
+
+            # Correct lambda capture using default argument
+            edit_btn.clicked.connect(lambda checked, uid=user_id: self.edit_staff(uid))
+            delete_btn.clicked.connect(lambda checked, uid=user_id: self.delete_staff(uid))
 
             action_layout.addWidget(edit_btn)
             action_layout.addWidget(delete_btn)
@@ -254,8 +252,14 @@ class StaffTabs(QWidget):
         self.load_data()
 
     def edit_staff(self, user_id):
-        if hasattr(self.parent, "edit_staff"):
-            self.parent.edit_staff(user_id)
+        """Opens the staff edit form"""
+        try:
+            from views.Admin.staff import EditStaffForm
+            dialog = EditStaffForm(self.parent.user_controller, user_id)
+            if dialog.exec():
+                self.load_data()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Cannot open Edit Staff form: {str(e)}")
 
     def delete_staff(self, user_id):
         confirm = QMessageBox.question(

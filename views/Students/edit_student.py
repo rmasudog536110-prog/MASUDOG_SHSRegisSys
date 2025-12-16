@@ -15,6 +15,15 @@ class EditStudentForm(QDialog):
 
     def init_ui(self):
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(10, 10, 10, 10)
+        # Theme consistent with dashboard
+        self.setStyleSheet("""
+            QDialog { background-color: #F3F6F8; }
+            QLabel { color: #111827; }
+            QLineEdit, QComboBox { background: white; border: 1px solid #0EA5E9; padding: 6px; border-radius: 4px; color: #111827; }
+            QPushButton { background-color: #0EA5E9; color: white; padding: 8px; border-radius: 6px; }
+            QPushButton#parentsBtn { background: transparent; color: #0EA5E9; border: none; padding: 4px; }
+        """)
         self.form = QFormLayout()
 
         self.first_name = QLineEdit()
@@ -38,8 +47,10 @@ class EditStudentForm(QDialog):
 
         # Buttons
         self.parents_btn = QPushButton("Manage Parents / Guardian")
+        self.parents_btn.setObjectName("parentsBtn")
         self.parents_btn.clicked.connect(self.open_parents)
         self.save_btn = QPushButton("Save Changes")
+        self.save_btn.setProperty('class', 'primary')
         self.save_btn.clicked.connect(self.save_changes)
 
         layout.addWidget(self.parents_btn)
@@ -99,7 +110,22 @@ class EditStudentForm(QDialog):
 
     def open_parents(self):
         try:
-            from views.Students.parents import ParentForm
-            ParentForm(self.student_controller, self.student_id).exec()
+            from views.Students.add_parents import ParentForm
+            parents = self.student_controller.get_parents_by_student(self.student_id)
+
+            if parents:
+                parent = parents[0]
+                ParentForm(
+                    self.student_controller,
+                    self.student_id,
+                    parent_id=parent["parent_id"],
+                    student_parent_id=parent["student_parent_id"]  # <--- get it from the dict
+                ).exec()
+            else:
+                ParentForm(self.student_controller, self.student_id).exec()
+
         except Exception as e:
+            print(self, "Error", f"Cannot open Parents form: {str(e)}")
             QMessageBox.critical(self, "Error", f"Cannot open Parents form: {str(e)}")
+
+

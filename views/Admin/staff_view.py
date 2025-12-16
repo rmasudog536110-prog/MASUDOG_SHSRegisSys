@@ -1,6 +1,6 @@
 from PyQt6.QtWidgets import QWidget, QVBoxLayout
-from views.Admin.stats import DashboardStats
-from views.Admin.tabs import StaffTabs
+from views.stat_cards import DashboardStats
+from views.dashboard_tabs import StaffTabs
 
 class AdminStaffDashboard(QWidget):
     def __init__(self, parent):

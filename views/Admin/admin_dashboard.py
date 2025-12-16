@@ -1,4 +1,6 @@
 import sys
+
+from controllers.authController import AuthController
 from models.db import Database
 from controllers.userController import UserController
 from controllers.studentController import StudentController
@@ -9,21 +11,22 @@ from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QFrame, QStatusBar
 )
-from PyQt6.QtCore import pyqtSignal, Qt
+from PyQt6.QtCore import pyqtSignal, QTimer
 from PyQt6.QtGui import QFont
 
-from views.Admin.student_dashboard import AdminStudentDashboard
-from views.Admin.staff_dashboard import AdminStaffDashboard
+from views.Students.student_view import AdminStudentDashboard
+from views.Admin.staff_view import AdminStaffDashboard
 from views.Admin.staff import CreateStaffForm
-from views.Students.student_form import StudentCreationForm
+from views.Students.create_student import StudentCreationForm
 
 
 class AdminDashboard(QMainWindow):
     logout_requested = pyqtSignal()
 
-    def __init__(self, userController, studentController, user_id, username):
+    def __init__(self, authController,userController, studentController, user_id, username):
         super().__init__()
 
+        self.auth_controller = authController
         self.user_controller = userController
         self.student_controller = studentController
         self.db = userController.db
@@ -33,6 +36,11 @@ class AdminDashboard(QMainWindow):
         self.init_ui()
         self.show_student_dashboard()
         self.load_statistics()
+
+        # Refresh statistics periodically so stat cards reflect live changes
+        self._stats_timer = QTimer(self)
+        self._stats_timer.timeout.connect(self.load_statistics)
+        self._stats_timer.start(2000)  # refresh every 2 seconds
 
     def init_ui(self):
         self.setWindowTitle("Admin Dashboard")
@@ -71,12 +79,12 @@ class AdminDashboard(QMainWindow):
         scaled_icon = header_icon.scaled(new_width, new_height)
         header_label.setPixmap(scaled_icon)
 
-        title = QLabel("SHS Management System")
+        title = QLabel("SHS Student Registration System")
         title.setFont(QFont("Arial", 20, QFont.Weight.Bold))
         title.setStyleSheet("color:#F6EBEB")
 
         user = QLabel(self.username.upper())
-        user.setStyleSheet("color:#F6EBEB")
+        user.setStyleSheet("color:white; font-weight:bold ")
 
         logout = QPushButton("Logout")
         logout.clicked.connect(self.logout)
@@ -154,6 +162,7 @@ if __name__ == "__main__":
     db.create_default_admin()
     db.create_default_staff()
 
+    auth_ctrl = AuthController(db)
     user_ctrl = UserController(db)
     student_ctrl = StudentController(db)
 
@@ -161,6 +170,7 @@ if __name__ == "__main__":
     app.setWindowIcon(QIcon(r"C:\Users\Machcreator\PycharmProjects\StudentRegisSys\images\LOGO (1).png"))
 
     dashboard = AdminDashboard(
+        authController=auth_ctrl,
         userController=user_ctrl,
         studentController=student_ctrl,
         user_id=101,

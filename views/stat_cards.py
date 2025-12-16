@@ -1,13 +1,11 @@
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QGroupBox, QGridLayout, QFrame, QSizePolicy, QDialog
+    QGroupBox, QGridLayout, QFrame, QDialog
 )
-from PyQt6.QtWidgets import QFileDialog, QMessageBox
-import csv
-from PyQt6.QtGui import QFont
 from PyQt6.QtCore import Qt
 from controllers.reportsController import ReportController
-from views.reports import ReportView
+from views.Reports.student_report import StudentReportView
+from views.Reports.staff_report import StaffReportView
 
 
 class DashboardStats(QWidget):
@@ -115,7 +113,7 @@ class DashboardStats(QWidget):
         # Card 3: Pending Reviews
         card_pending, self.parent.pending_reviews_label = self._stat_card(
             "Pending Reviews",
-            "#f39c12",  # Orange/Yellow
+            "#f39c12",
             callback=lambda: self._open_report_view(mode="students", select_tab=3)
         )
         row.addWidget(card_pending)
@@ -147,15 +145,16 @@ class DashboardStats(QWidget):
         ), 0, 0)
 
         layout.addWidget(self._action_btn(
-            "Refresh Table", "#2ecc71", lambda: getattr(self.parent, 'student_dashboard', None) and getattr(self.parent.student_dashboard, 'table', None) and self.parent.student_dashboard.table.refresh_table()
+            "Sort Table", "#2ecc71", lambda: getattr(self.parent, 'student_dashboard', None) and getattr(self.parent.student_dashboard, 'table', None) and self.parent.student_dashboard.table.refresh_table()
         ), 0, 1)
 
-        layout.addWidget(self._action_btn(
-            "View Staff Table", "#2ecc71", self.parent.show_staff_dashboard
-        ), 0, 2)
+        if getattr(self.parent, 'username', '').lower() == 'admin':
+            layout.addWidget(self._action_btn(
+                "View Staff Table", "#2ecc71", self.parent.show_staff_dashboard
+            ), 0, 2)
 
         layout.addWidget(self._action_btn(
-            "Export Report", "#0EA5E9", lambda: self._open_report_view(mode="students")
+            "View Report", "#0EA5E9", lambda: self._open_report_view_students(mode="students")
         ), 0, 3)
 
         return group
@@ -170,7 +169,7 @@ class DashboardStats(QWidget):
         ), 0, 0)
 
         layout.addWidget(self._action_btn(
-            "Refresh Table", "#2ecc71", lambda: getattr(self.parent, 'staff_dashboard', None) and getattr(self.parent.staff_dashboard, 'table', None) and self.parent.staff_dashboard.table.refresh_table()
+            "Sort Table", "#2ecc71", lambda: getattr(self.parent, 'staff_dashboard', None) and getattr(self.parent.staff_dashboard, 'table', None) and self.parent.staff_dashboard.table.refresh_table()
         ), 0, 1)
 
         layout.addWidget(self._action_btn(
@@ -178,32 +177,12 @@ class DashboardStats(QWidget):
         ), 0, 2)
 
         layout.addWidget(self._action_btn(
-            "Export Report", "#0EA5E9", lambda: self._open_report_view(mode="staff")
+            "Export Report", "#0EA5E9", lambda: self._open_report_view_staff(mode="staff")
         ), 0, 3)
 
         return group
 
-    def _export_students_csv(self):
-        from PyQt6.QtWidgets import QFileDialog, QMessageBox
-        import csv
-        try:
-            students = self.parent.student_controller.get_all_students()
-            path, _ = QFileDialog.getSaveFileName(self, 'Export Students Report', '', 'CSV Files (*.csv)')
-            if not path:
-                return
-            with open(path, 'w', newline='', encoding='utf-8') as f:
-                writer = csv.writer(f)
-                writer.writerow(["ID", "First Name", "Middle Name", "Last Name", "Email", "Strand", "Grade", "Status"])
-                for s in students:
-                    writer.writerow([
-                        s.get('id'), s.get('first_name'), s.get('middle_name'), s.get('last_name'),
-                        s.get('email'), s.get('strand'), s.get('grade'), s.get('status')
-                    ])
-            QMessageBox.information(self, 'Export', 'Students report exported successfully')
-        except Exception as e:
-            QMessageBox.critical(self, 'Export Error', str(e))
-
-    def _open_report_view(self, mode="students"):
+    def _open_report_view_students(self, mode="students"):
         """Open a dialog showing `ReportView` so the user can preview and export manually."""
         try:
             controller = ReportController(getattr(self.parent, 'db', None) or getattr(self.parent, 'user_controller', None).db)
@@ -215,31 +194,27 @@ class DashboardStats(QWidget):
         dialog.resize(900, 700)
         layout = QVBoxLayout(dialog)
 
-        report_view = ReportView(dialog, controller)
-        # if mode is staff we could switch to a staff-specific tab or filter inside report_view
+        report_view = StudentReportView(dialog, controller)
         layout.addWidget(report_view)
 
         dialog.exec()
 
-    def _export_staff_csv(self):
+    def _open_report_view_staff(self, mode="staff"):
+        """Open a dialog showing `ReportView` so the user can preview and export manually."""
         try:
-            users = self.parent.user_controller.get_all_users()
-            staff = [u for u in users if u.get('role') == 'staff']
-            path, _ = QFileDialog.getSaveFileName(self, 'Export Staff Report', '', 'CSV Files (*.csv)')
-            if not path:
-                return
-            with open(path, 'w', newline='', encoding='utf-8') as f:
-                writer = csv.writer(f)
-                writer.writerow(["ID", "First Name", "Last Name", "Email", "Department", "Status"])
-                for s in staff:
-                    writer.writerow([
-                        s.get('id'), s.get('first_name'), s.get('last_name'), s.get('email'),
-                        s.get('department'), s.get('status')
-                    ])
-            QMessageBox.information(self, 'Export', 'Staff report exported successfully')
-        except Exception as e:
-            QMessageBox.critical(self, 'Export Error', str(e))
+            controller = ReportController(getattr(self.parent, 'db', None) or getattr(self.parent, 'user_controller', None).db)
+        except Exception:
+            controller = ReportController(getattr(self.parent, 'db', None))
 
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Reports")
+        dialog.resize(900, 700)
+        layout = QVBoxLayout(dialog)
+
+        report_view = StaffReportView(dialog, controller)
+        layout.addWidget(report_view)
+
+        dialog.exec()
 
     def _action_btn(self, text, color, callback):
         btn = QPushButton(text)

@@ -88,7 +88,7 @@ class Database:
                 department_id INT NULL,
                 username VARCHAR(50) UNIQUE NOT NULL,
                 password VARCHAR(255) NOT NULL, -- store hash
-                role ENUM('admin','staff','faculty') NOT NULL DEFAULT 'staff',
+                role ENUM('admin','staff') NOT NULL DEFAULT 'staff',
                 status ENUM('active', 'inactive') DEFAULT 'active',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 
@@ -251,7 +251,19 @@ class Database:
                 )
                 """)
 
-            # Seed basic strands and grade levels if empty
+            # Seed basic strands, grade levels, and departments if empty
+            # Check departments
+            cursor.execute("SELECT COUNT(*) FROM departments")
+            count = cursor.fetchone()[0]
+
+            if count == 0:
+                departments = ['Administration', 'Registrar']
+                dept_tuples = [(d,) for d in departments]
+                cursor.executemany(
+                    "INSERT INTO departments (name) VALUES (%s)",
+                    dept_tuples
+                )
+
             # Check strands
             cursor.execute("SELECT COUNT(*) FROM strands")
             count = cursor.fetchone()[0]  # fetchone() returns a tuple like (count,)
@@ -366,6 +378,34 @@ class Database:
         if self.connection and self.connection.is_connected():
             self.connection.close()
             print("Database connection closed")
+
+    def fetch_all(self, query, params=None):
+        """Helper to execute a query and return all rows."""
+        if not self.connection or not self.connection.is_connected():
+            raise RuntimeError("Database not connected")
+        cursor = self.connection.cursor()
+        try:
+            if params:
+                cursor.execute(query, params)
+            else:
+                cursor.execute(query)
+            return cursor.fetchall()
+        finally:
+            cursor.close()
+
+    def fetch_one(self, query, params=None):
+        """Helper to execute a query and return a single row."""
+        if not self.connection or not self.connection.is_connected():
+            raise RuntimeError("Database not connected")
+        cursor = self.connection.cursor()
+        try:
+            if params:
+                cursor.execute(query, params)
+            else:
+                cursor.execute(query)
+            return cursor.fetchone()
+        finally:
+            cursor.close()
 
 
 if __name__ == '__main__':
