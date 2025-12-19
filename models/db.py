@@ -124,7 +124,7 @@ class Database:
                 personal_info_id INT NOT NULL,
                 strand_id INT,
                 grade_level_id INT,
-                student_type ENUM('new','returning','als','pept','transferee') DEFAULT 'new',
+                student_type ENUM('new','returnee','als','pept','transferee') DEFAULT 'new',
                 status ENUM('enrolled', 'pending', 'cancelled') DEFAULT 'pending',
                 created_by INT,
                 registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -246,8 +246,10 @@ class Database:
             CREATE TABLE IF NOT EXISTS reports (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 report_type VARCHAR(50),
+                generated_by INT,
                 generated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                generated_by VARCHAR(50) -- staff/admin username
+                
+                FOREIGN KEY(generated_by) REFERENCES users(id) ON DELETE SET NULL
                 )
                 """)
 

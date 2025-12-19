@@ -20,10 +20,10 @@ from views.Staff.staff import CreateStaffForm
 from views.Student_Parent.create_student import StudentCreationForm
 
 
-class StaffDashboard(QMainWindow):
+class AdminDashboard(QMainWindow):
     logout_requested = pyqtSignal()
 
-    def __init__(self, authController,userController, studentController, user_id, username):
+    def __init__(self, authController, userController, studentController, user_id, username):
         super().__init__()
 
         self.auth_controller = authController
@@ -32,20 +32,20 @@ class StaffDashboard(QMainWindow):
         self.db = userController.db
         self.current_user_id = user_id
         self.username = username
+        self.subject_controller = None
 
         self.init_ui()
         self.show_student_dashboard()
         self.load_statistics()
 
-        # Refresh statistics periodically so stat cards reflect live changes
         self._stats_timer = QTimer(self)
         self._stats_timer.timeout.connect(self.load_statistics)
-        self._stats_timer.start(2000)  # refresh every 2 seconds
+        self._stats_timer.start(2000)
 
     def init_ui(self):
-        self.setWindowTitle("Staff Dashboard")
+        self.setWindowTitle("Admin Dashboard")
         self.setMinimumSize(1200, 700)
-
+        self.setWindowIcon(QIcon(r"C:\Users\Machcreator\PycharmProjects\StudentRegisSys\images\LOGO (1).png"))
         central = QWidget()
         central.setStyleSheet("background-color: #D9D9D9;")
         self.setCentralWidget(central)
@@ -55,8 +55,11 @@ class StaffDashboard(QMainWindow):
 
         self._create_header(layout)
         self.student_dashboard = AdminStudentDashboard(self)
+        self.staff_dashboard = AdminStaffDashboard(self)
+        self.staff_dashboard.hide()
 
         layout.addWidget(self.student_dashboard)
+        layout.addWidget(self.staff_dashboard)
 
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
@@ -76,7 +79,7 @@ class StaffDashboard(QMainWindow):
         scaled_icon = header_icon.scaled(new_width, new_height)
         header_label.setPixmap(scaled_icon)
 
-        title = QLabel("SHS Management System")
+        title = QLabel("SHS Student Registration System")
         title.setFont(QFont("Arial", 20, QFont.Weight.Bold))
         title.setStyleSheet("color:#F6EBEB")
 
@@ -97,11 +100,18 @@ class StaffDashboard(QMainWindow):
     # ================= DASHBOARD SWITCHING =================
 
     def show_student_dashboard(self):
-        if getattr(self.username, 'username', '').lower() == 'staff':
-            self.staff_dashboard.hide()
+        self.staff_dashboard.hide()
         self.student_dashboard.show()
         self.student_dashboard.load_data()
         self.load_statistics()
+
+    def show_staff_dashboard(self):
+        self.student_dashboard.hide()
+        self.staff_dashboard.show()
+        self.staff_dashboard.load_data()
+        self.load_statistics()
+
+    # ================= STATISTICS =================
 
     def load_statistics(self):
         self.total_students_label.setText(
@@ -114,13 +124,65 @@ class StaffDashboard(QMainWindow):
             str(self.student_controller.get_pending_student_count())
         )
 
+        self.total_staff_label.setText(
+            str(self.user_controller.get_staff_count())
+        )
+        self.active_staff_label.setText(
+            str(self.user_controller.get_active_staff_count())
+        )
+        self.staff_pending_label.setText(
+            str(self.user_controller.get_inactive_staff_count())
+        )
+
     # ================= ACTIONS =================
+
 
     def create_student_account(self):
         dialog = StudentCreationForm(self.db, self.current_user_id)
         if dialog.exec():
             self.student_dashboard.load_data()
             self.load_statistics()
+
+    def create_staff_account(self):
+        dialog = CreateStaffForm(self.user_controller)
+        if dialog.exec():
+            self.staff_dashboard.load_data()
+            self.load_statistics()
+
+    def create_subject_dialog(self):
+        """Open dialog to create a new subject"""
+        # Import locally to avoid circular imports
+        try:
+            from views.Subjects.subject_dialog import SubjectDialog
+            from controllers.subjectController import SubjectController
+
+            # Create controller if not exists
+            if not hasattr(self, 'subject_controller'):
+                self.subject_controller = SubjectController(self.db)
+
+            dialog = SubjectDialog(self.db)
+            dialog.subject_saved.connect(self.on_subject_created)
+            dialog.exec()
+        except ImportError as e:
+            QMessageBox.critical(self, "Import Error",
+                                 f"Cannot load subject dialog: {str(e)}")
+        except Exception as e:
+            QMessageBox.critical(self, "Error",
+                                 f"Unexpected error: {str(e)}")
+
+    def on_subject_created(self, subject_id):
+        """Handle subject creation"""
+        QMessageBox.information(self, "Success", f"Subject created with ID: {subject_id}")
+
+    def show_subject_management(self):
+        """Show subject management view"""
+        self.subject_management_view = SubjectManagementView(self.db)
+        self.setCentralWidget(self.subject_management_view)
+
+    def show_assign_subjects(self):
+        """Show assign subjects view"""
+        self.assign_subjects_view = AssignSubjectsView(self.db)
+        self.setCentralWidget(self.assign_subjects_view)
 
     def logout(self):
         self.logout_requested.emit()
@@ -141,15 +203,17 @@ if __name__ == "__main__":
     student_ctrl = StudentController(db)
 
     app = QApplication(sys.argv)
-    app.setWindowIcon(QIcon(r"C:\Users\Machcreator\PycharmProjects\StudentRegisSys\images\LOGO (1).png"))
+    app.setWindowIcon(QIcon(r"/images/LOGO (1).png"))
 
-    dashboard = StaffDashboard(
+    dashboard = AdminDashboard(
         authController=auth_ctrl,
         userController=user_ctrl,
         studentController=student_ctrl,
-        user_id=102,
-        username="staff"
+        user_id=101,
+        username="admin"
     )
 
     dashboard.show()
     sys.exit(app.exec())
+
+

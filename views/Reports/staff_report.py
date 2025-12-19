@@ -1,9 +1,7 @@
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QTabWidget, QTableWidget, QTableWidgetItem,
-    QLabel, QHBoxLayout, QPushButton, QFileDialog, QMessageBox, QHeaderView
+    QLabel, QHBoxLayout, QPushButton, QHeaderView
 )
-from PyQt6.QtCore import Qt, QMarginsF
-from PyQt6.QtGui import QPageLayout, QPageSize, QTextDocument, QPdfWriter
 from views.Reports.pdf_export import PDFExport
 
 class StaffReportView(QWidget):
@@ -15,6 +13,19 @@ class StaffReportView(QWidget):
         self.init_ui()
 
     def init_ui(self):
+
+        self.setStyleSheet("""
+                    QMessageBox QLabel {
+                        color: black;
+                    }
+                    QMessageBox QPushButton {
+                        background-color: #0EA5E9;
+                        color: white;
+                        padding: 5px 15px;
+                        border-radius: 4px;
+                    }
+                """)
+
         main_layout = QVBoxLayout(self)
 
         # ---------- HEADER ----------

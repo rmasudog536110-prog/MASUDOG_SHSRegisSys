@@ -17,6 +17,18 @@ class StudentReportView(QWidget):
     def init_ui(self):
         main_layout = QVBoxLayout(self)
 
+        self.setStyleSheet("""
+                    QMessageBox QLabel {
+                        color: black;
+                    }
+                    QMessageBox QPushButton {
+                        background-color: #0EA5E9;
+                        color: white;
+                        padding: 5px 15px;
+                        border-radius: 4px;
+                    }
+                """)
+
         table_style = """
             QTableWidget {
                 background-color: white;

@@ -385,3 +385,106 @@ class StudentController:
             self.db.connection.rollback()
             print("Error deleting parent:", e)
             return False
+
+    def create_sample_students(self, created_by=101):
+        """
+        Create sample student records for testing/demo purposes
+        """
+
+        sample_students = [
+            {
+                "first_name": "Mark",
+                "middle_name": "A.",
+                "last_name": "Villanueva",
+                "suffix": "",
+                "sex": "Male",
+                "nationality": "Filipino",
+                "place_of_birth": "Laguna",
+                "email": "mark.villanueva@example.com",
+                "phone_number": "09461234567",
+                "date_of_birth": "2007-01-18",
+                "address": "Calamba, Laguna",
+                "strand": "TVL",
+                "grade_level": "Grade 10",
+                    "student_type": "new"
+            },
+            {
+                "first_name": "Jasmine",
+                "middle_name": "",
+                "last_name": "Lopez",
+                "suffix": "",
+                "sex": "Female",
+                "nationality": "Filipino",
+                "place_of_birth": "Batangas City",
+                "email": "jasmine.lopez@example.com",
+                "phone_number": "09511234567",
+                "date_of_birth": "2008-06-30",
+                "address": "Batangas",
+                "strand": "ABM",
+                "grade_level": "Grade 9",
+                "student_type": "new"
+            },
+            {
+                "first_name": "Ryan",
+                "middle_name": "C.",
+                "last_name": "Mendoza",
+                "suffix": "",
+                "sex": "Male",
+                "nationality": "Filipino",
+                "place_of_birth": "Cavite",
+                "email": "ryan.mendoza@example.com",
+                "phone_number": "09631234567",
+                "date_of_birth": "2006-09-12",
+                "address": "Dasmariñas, Cavite",
+                "strand": "STEM",
+                "grade_level": "Grade 11",
+                "student_type": "als"
+            },
+            {
+                "first_name": "Nicole",
+                "middle_name": "R.",
+                "last_name": "Soriano",
+                "suffix": "",
+                "sex": "Female",
+                "nationality": "Filipino",
+                "place_of_birth": "Iloilo City",
+                "email": "nicole.soriano@example.com",
+                "phone_number": "09771234567",
+                "date_of_birth": "2007-03-25",
+                "address": "Iloilo",
+                "strand": "HUMSS",
+                "grade_level": "Grade 10",
+                "student_type": "returnee"
+            },
+            {
+                "first_name": "Daniel",
+                "middle_name": "P.",
+                "last_name": "Cruz",
+                "suffix": "",
+                "sex": "Male",
+                "nationality": "Filipino",
+                "place_of_birth": "San Fernando, Pampanga",
+                "email": "daniel.cruz@example.com",
+                "phone_number": "09891234567",
+                "date_of_birth": "2006-12-07",
+                "address": "Pampanga",
+                "strand": "GAS",
+                "grade_level": "Grade 11",
+                "student_type": "als"
+            }
+
+        ]
+
+        created_ids = []
+
+        for student in sample_students:
+            student_id = self.create_student(
+                student_data=student,
+                created_by=created_by,
+                document_files=None
+            )
+            if student_id:
+                created_ids.append(student_id)
+
+        return created_ids
+

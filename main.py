@@ -11,7 +11,7 @@ from controllers.authController import AuthController
 from controllers.studentController import StudentController
 
 # Views
-from views.login import LoginWindow
+from views.Auth.login import LoginWindow
 
 if __name__ == "__main__":
     # Initialize database
@@ -42,14 +42,14 @@ if __name__ == "__main__":
         username = user.get("username")
 
         if role.lower() == "admin":
-            from views.Admin.admin_dashboard import AdminDashboard
+            from views.Dashboard.admin_dashboard import AdminDashboard
             window.dashboard = AdminDashboard(auth_ctrl, user_ctrl, student_ctrl, user_id, username)
         else:
             from views.Staff.staff_dashboard import StaffDashboard
-            window.dashboard = StaffDashboard(auth_ctrl, student_ctrl, user_id, username)
+            window.dashboard = StaffDashboard(auth_ctrl,user_ctrl, student_ctrl, user_id, username)
 
         window.dashboard.show()
-        window.hide()  # close login window
+        window.hide()
 
     window.login_successful.connect(open_dashboard)
 
